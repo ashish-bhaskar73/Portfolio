@@ -1,0 +1,19 @@
+[
+  {
+    "name": "RHCE",
+    "desc": "RedHat Certified Engineer",
+    "image": "rhce",
+    "links": {
+      "view": "https://www.linkedin.com/posts/bhaskarashish_rhce-activity-7054156743110443008-tpB9?utm_source=share&utm_medium=member_desktop"
+    }
+  },
+  {
+    "name": "RHCSA",
+    "desc": "RedHat Certified System Administor",
+    "image": "rhcsa",
+    "links": {
+      "view": "https://www.linkedin.com/posts/bhaskarashish_redhat-redhatcertification-rhcsa-activity-7047786160353419264-KWOs?utm_source=share&utm_medium=member_desktop"
+    }
+  }
+  
+]
