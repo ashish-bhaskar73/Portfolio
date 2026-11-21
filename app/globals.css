@@ -1,26 +1,641 @@
 @import "tailwindcss";
 
+/*
+ * "Paper" design system: a white studio sheet, huge display type, mono labels
+ * as annotations, and ONE accent colour (blueprint blue).
+ *
+ * Token names (--background, --surface, --accent …) are kept from the previous
+ * terminal theme on purpose: @theme inline below maps them to Tailwind
+ * utilities (bg-surface, text-accent …) that many components already use.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfdfd; /* paper */
+  --surface: #f1f2f6; /* tint */
+  --surface-2: #e9eaf0;
+  --border: #e3e4ea; /* hairline */
+  --foreground: #111216; /* ink */
+  --ink-2: #3a3c44;
+  --muted: #6c6f7a;
+  --faint: #9a9da8;
+  --accent: #2445ff; /* blueprint blue */
+  --accent-dim: #1a35d6;
+  --accent-soft: #e7ebff;
+  --cyan: #2445ff; /* legacy tones collapse onto the single accent */
+  --amber: #3a3c44;
+  --red: #d92d20;
+  --ok: #18a957;
+  --shadow: rgba(17, 18, 22, 0.08);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --gutter: clamp(16px, 3.2vw, 44px);
+}
+
+:root[data-theme="dark"] {
+  --background: #0c0d10;
+  --surface: #15171c;
+  --surface-2: #1c1f26;
+  --border: #262932;
+  --foreground: #eceef3;
+  --ink-2: #c3c6d0;
+  --muted: #8d919d;
+  --faint: #5f6370;
+  --accent: #6b7fff;
+  --accent-dim: #8796ff;
+  --accent-soft: #1b2050;
+  --cyan: #6b7fff;
+  --amber: #c3c6d0;
+  --red: #f97066;
+  --ok: #32d583;
+  --shadow: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-soft: var(--accent-soft);
+  --color-cyan: var(--cyan);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+  --font-sans: var(--nf-body);
+  --font-display: var(--nf-display);
+  --font-mono: var(--nf-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * Element defaults live in @layer base so Tailwind utilities (which sit in
+ * @layer utilities) can override them. Un-layered rules would beat ANY
+ * layered rule regardless of specificity — e.g. `h4 { font-family }` would
+ * silently defeat a `font-mono` class on an <h4>.
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--nf-body), "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--nf-display), "Helvetica Neue", Arial, sans-serif;
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    word-spacing: 0.06em;
+    text-wrap: balance;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: #fff;
+  }
+  /* Dark mode's lighter accent needs dark text: #fff on #6b7fff is only 3.4:1. */
+  :root[data-theme="dark"] ::selection {
+    color: var(--background);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 }
 
-body {
+/* ---------- Primitives ---------- */
+@layer components {
+  /* horizontal page gutter */
+  .wrap {
+    padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  }
+
+  /* vertical rhythm for a block of content */
+  .section {
+    padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+    padding-block: clamp(64px, 9vw, 128px);
+  }
+
+  /* mono uppercase annotation */
+  .label {
+    font-family: var(--nf-mono), ui-monospace, monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* green "available" dot before a label */
+  .avail {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .avail::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 15%, transparent);
+  }
+
+  /* pill buttons */
+  .btn,
+  .btn-primary,
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--foreground);
+    color: var(--background);
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition:
+      background 0.25s,
+      color 0.25s,
+      box-shadow 0.25s;
+  }
+  .btn:hover,
+  .btn-primary:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn .arr {
+    display: inline-block;
+    transition: transform 0.3s var(--ease);
+  }
+  .btn:hover .arr {
+    transform: translateX(3px) rotate(-45deg);
+  }
+  .btn.ghost,
+  .btn-secondary {
+    background: transparent;
+    color: var(--foreground);
+    box-shadow: inset 0 0 0 1.5px var(--foreground);
+  }
+  .btn.ghost:hover,
+  .btn-secondary:hover {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  /* underline-on-hover text link */
+  .ulink {
+    position: relative;
+  }
+  .ulink::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1.5px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.35s var(--ease);
+  }
+  .ulink:hover::after,
+  .ulink[aria-current="page"]::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* section header: small label column | big title column */
+  .sec-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+    gap: 24px;
+    align-items: end;
+    margin-bottom: clamp(36px, 5vw, 64px);
+  }
+  .sec-head h2 {
+    font-size: clamp(36px, 5.6vw, 84px);
+  }
+  @media (max-width: 700px) {
+    .sec-head {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+
+  /* big statement paragraph with blue emphasis */
+  .statement {
+    font-family: var(--nf-display), sans-serif;
+    font-weight: 600;
+    font-size: clamp(26px, 3.6vw, 54px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    max-width: 24ch;
+    text-wrap: balance;
+  }
+  .statement em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  /* stats band */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--foreground);
+  }
+  .stat {
+    padding: 20px 20px 0 0;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .stat + .stat {
+    padding-left: 20px;
+    border-left: 1px solid var(--border);
+  }
+  .stat b {
+    font-family: var(--nf-display), sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 5vw, 76px);
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+  /* `>` matters: Counter renders the number as a <span> inside <b>; a plain
+     descendant selector would shrink the number to label size. */
+  .stat > span {
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 22ch;
+  }
+  @media (max-width: 800px) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .stat:nth-child(3) {
+      padding-left: 0;
+      border-left: 0;
+    }
+    .stat:nth-child(n + 3) {
+      padding-top: 28px;
+    }
+  }
+
+  /* list rows (projects, writing, experience) */
+  .rows {
+    border-top: 1px solid var(--foreground);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) auto;
+    gap: 24px;
+    align-items: center;
+    padding-block: 26px;
+    border-bottom: 1px solid var(--border);
+    transition: padding 0.45s var(--ease);
+  }
+  .row h3 {
+    font-size: clamp(22px, 2.8vw, 40px);
+    letter-spacing: -0.035em;
+  }
+  .row .meta {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .row .kpi {
+    font-family: var(--nf-mono), monospace;
+    font-size: 13px;
+  }
+  .row .go {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 1.5px var(--border);
+    transition:
+      background 0.3s,
+      color 0.3s,
+      box-shadow 0.3s,
+      transform 0.4s var(--ease);
+  }
+  a.row:hover {
+    padding-left: 14px;
+  }
+  a.row:hover .go {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: none;
+    transform: rotate(-45deg);
+  }
+  @media (max-width: 800px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px 16px;
+    }
+    .row h3 {
+      grid-column: 1;
+    }
+    .row .go {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+    }
+    .row .meta,
+    .row .kpi {
+      grid-column: 1;
+    }
+  }
+
+  /* tag chip */
+  .tag {
+    display: inline-flex;
+    font-family: var(--nf-mono), monospace;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--border);
+    color: var(--ink-2);
+  }
+
+  /* giant closing call-to-action */
+  .cta {
+    display: grid;
+    gap: 28px;
+    justify-items: start;
+  }
+  .cta h2 {
+    font-size: clamp(48px, 9vw, 150px);
+    letter-spacing: -0.055em;
+    line-height: 0.86;
+  }
+  .cta h2 span {
+    color: var(--accent);
+  }
+
+  /* legacy card primitives — only the unused Hero/About/Writing components still reference these */
+  .card,
+  .card-strong,
+  .card-lg {
+    @apply rounded-2xl border border-border bg-surface/60;
+  }
+}
+
+/* ---------- Image edge feathering (blends photos into the paper) ---------- */
+.feather {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 5%, #000 95%, transparent);
+  mask-composite: intersect;
+}
+.feather-bottom {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent),
+    linear-gradient(to bottom, #000 70%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent),
+    linear-gradient(to bottom, #000 70%, transparent);
+  mask-composite: intersect;
+}
+
+/* ---------- Marquee ---------- */
+.marquee {
+  overflow: hidden;
+  border-block: 1px solid var(--border);
+  padding-block: 18px;
+  white-space: nowrap;
+}
+.marquee .track {
+  display: inline-flex;
+  animation: marq 46s linear infinite;
+}
+.marquee .item {
+  font-family: var(--nf-display), sans-serif;
+  font-weight: 700;
+  font-size: clamp(20px, 2.4vw, 32px);
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 40px;
+  padding-right: 40px;
+}
+.marquee .item::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.marquee:hover .track {
+  animation-play-state: paused;
+}
+@keyframes marq {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ---------- Hero ---------- */
+.hero-name {
+  font-size: clamp(54px, 11.6vw, 200px);
+  line-height: 0.84;
+  letter-spacing: -0.055em;
+  font-stretch: 92%;
+}
+.hero-name .ln {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.04em;
+}
+.hero-name .ln > span {
+  display: inline-block;
+  animation: rise 1.1s var(--ease) both;
+}
+.hero-name .ln:nth-child(2) > span {
+  animation-delay: 0.08s;
+}
+.hero-fade {
+  animation: fade-up 1s var(--ease) 0.25s both;
+}
+@keyframes rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+/* ---------- Preloader ---------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   background: var(--background);
+  /* failsafe: if JS never runs, the loader still disappears */
+  animation: loader-failsafe 0.6s ease 6s forwards;
+}
+.loader .bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 2px;
+  background: var(--foreground);
+}
+.loader .count {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 18px;
+  font-family: var(--nf-display), sans-serif;
+  font-weight: 300;
+  font-size: clamp(72px, 14vw, 180px);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.loader .tag-line {
+  position: absolute;
+  left: var(--gutter);
+  bottom: 24px;
+}
+/* skipped this session (or reduced motion) — set by Preloader's inline script */
+html.loader-seen .loader:not(.done) {
+  display: none;
+}
+.loader.done {
+  transform: translateY(-100%);
+  /* duration must match EXIT_MS in app/components/Preloader.tsx */
+  transition: transform 0.4s cubic-bezier(0.76, 0, 0.24, 1);
+}
+@keyframes loader-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* ---------- Floating CTA (phones) ---------- */
+.float-cta {
+  position: fixed;
+  right: var(--gutter);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  z-index: 40;
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition:
+    opacity 0.3s,
+    transform 0.3s var(--ease);
+}
+.float-cta.show {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+@media (min-width: 901px) {
+  .float-cta {
+    display: none;
+  }
+}
+
+/* ---------- Scroll reveal (used by Reveal.tsx) ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.9s var(--ease),
+    transform 0.9s var(--ease);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Form fields (underline style) ---------- */
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid var(--border);
+  padding: 10px 0;
+  font: inherit;
+  font-size: 18px;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  outline: none;
+  transition: border-color 0.25s;
+}
+.field input:focus,
+.field textarea:focus {
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Code highlighting (rehype-pretty-code, dual theme) ---------- */
+/* Each token carries --shiki-light and --shiki-dark; pick by the theme toggle. */
+[data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-light);
+}
+:root[data-theme="dark"] [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

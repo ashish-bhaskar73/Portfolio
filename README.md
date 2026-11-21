@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ashish Bhaskar — Personal Portfolio
+
+A single-page developer portfolio + technical blog for **Ashish Bhaskar** (Java Backend Engineer), built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
+
+## Features
+
+- Terminal-inspired design with a **light / dark theme toggle** (persisted, no flash of wrong theme).
+- Sections: Hero, About (animated stat counters), Experience, Skills, Projects, **System Architecture** diagram, **Writing**, Contact.
+- **MDX blog** at `/blog` — posts live in `app/blog/<slug>/page.mdx`; the manifest is `app/blog/posts.ts`.
+- Working contact form (`/api/contact`) with validation, scroll-progress bar, scroll-reveal animations, and full mobile responsiveness.
+- SEO: dynamic Open Graph / Twitter social image (`app/opengraph-image.tsx`), `AB` favicon (`app/icon.svg`), rich metadata.
+
+## Editing content
+
+Almost everything is data-driven — edit **`app/lib/data.ts`** (profile, links, experience, skills, projects, architecture diagram, nav). Blog posts are MDX files under `app/blog/`.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The project is deploy-ready with zero configuration and no required environment variables.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm i -g vercel      # install the Vercel CLI (one-time)
+vercel login         # authenticate (opens the browser)
+vercel               # deploy a preview
+vercel --prod        # promote to production
+```
+
+After you know your production URL, set it so social-share/OG links resolve correctly — either update the fallback in `app/layout.tsx` (`siteUrl`) or add an environment variable:
+
+```bash
+vercel env add NEXT_PUBLIC_SITE_URL production   # e.g. https://ashish-bhaskar.vercel.app
+```
+
+> **Tip:** In this session you can run the interactive login yourself by typing
+> `! vercel login` in the prompt.
+
+## Optional: real contact-form email
+
+The contact form currently validates and logs submissions server-side. To actually
+deliver emails, wire a provider (e.g. Resend or AWS SES) inside
+`app/api/contact/route.ts` — a ready-to-use snippet is included in the comments there —
+and store the API key as a Vercel environment variable.

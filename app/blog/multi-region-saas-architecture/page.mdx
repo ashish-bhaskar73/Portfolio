@@ -1,0 +1,59 @@
+import PostLayout from "../PostLayout";
+import { postMetadata } from "../posts";
+
+export const metadata = postMetadata("multi-region-saas-architecture");
+
+export default function Page({ children }) {
+  return <PostLayout slug="multi-region-saas-architecture">{children}</PostLayout>;
+}
+
+"Just deploy it to another region" is where most multi-region conversations
+start and end. But going global is less about copying infrastructure and more
+about deciding **where your data lives, how it stays consistent, and what you're
+willing to trade for latency.**
+
+## Start from the requirements, not the map
+
+Three forces usually drive the decision:
+
+- **Data residency** — regulations may require EU user data to stay in the EU.
+- **Disaster recovery** — a region can fail; can you keep serving?
+- **Latency** — users near a region should get local response times.
+
+These pull in different directions. Residency partitions your data; DR wants it
+replicated; latency wants it close to everyone. The architecture is how you
+reconcile them.
+
+## Two broad patterns
+
+### Region-partitioned (data stays home)
+
+Each region owns its users' data end to end. A routing layer sends a request to
+the region that owns that tenant. This nails residency and keeps things simple —
+at the cost of cross-region features being harder.
+
+### Replicated with a primary
+
+One region is the write primary; others are read replicas. Great for read-heavy,
+latency-sensitive workloads, but you inherit **replication lag** and must design
+for eventual consistency on the read path.
+
+## The trade-offs you can't avoid
+
+- **Consistency vs. latency.** Synchronous cross-region writes are slow;
+  asynchronous ones are eventually consistent. Pick per use case, not globally.
+- **Routing.** Geo-DNS and edge routing decide who goes where; getting tenant →
+  region mapping right is half the battle.
+- **Operational cost.** Every region is more to deploy, monitor, and pay for.
+  Start with the fewest regions that satisfy the requirements.
+
+## HLD then LLD
+
+I sketch the **high-level design** first — regions, routing, data ownership,
+failover story — and only then drop into the **low-level design**: schemas,
+replication config, health checks, and the runbook for a region failover. The
+HLD keeps the LLD honest.
+
+> Multi-region isn't a switch you flip. It's a set of deliberate trade-offs you
+> make with your eyes open — and document so the on-call engineer at 3 a.m.
+> understands them too.

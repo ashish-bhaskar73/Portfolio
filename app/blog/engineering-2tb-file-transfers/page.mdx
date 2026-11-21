@@ -1,0 +1,59 @@
+import PostLayout from "../PostLayout";
+import { postMetadata } from "../posts";
+
+export const metadata = postMetadata("engineering-2tb-file-transfers");
+
+export default function Page({ children }) {
+  return <PostLayout slug="engineering-2tb-file-transfers">{children}</PostLayout>;
+}
+
+Moving a 2 TB file over HTTP in a single request is a non-starter: one dropped
+connection and you begin again from zero. The fix is to stop thinking about
+"a file" and start thinking about **thousands of independent parts** that can
+fail and retry on their own.
+
+## Why single-request uploads break
+
+A naïve `PUT` of a huge object couples the entire transfer to one TCP
+connection and one process lifetime. At terabyte scale you will hit timeouts,
+memory pressure from buffering, and the brutal reality that a failure at 99%
+costs you everything.
+
+## Multipart, conceptually
+
+S3 multipart upload splits the object into parts (5 MB–5 GB each). Each part is
+uploaded independently and S3 stitches them together on completion:
+
+1. **Initiate** — ask S3 for an `uploadId`.
+2. **Upload parts** — send each chunk in parallel; S3 returns an `ETag` per part.
+3. **Complete** — send the ordered list of `{ partNumber, eTag }`.
+
+Because parts are independent, a failed part is a *local* retry — not a restart.
+
+## Making it resilient
+
+The multipart primitives give you the mechanism; resilience comes from how you
+wrap them:
+
+- **Persist progress.** Store the `uploadId` and each completed part's `ETag` in
+  a table keyed by the transfer. On restart, skip parts you've already sent.
+- **Bounded parallelism.** Upload N parts concurrently with a semaphore so you
+  saturate bandwidth without exhausting memory or file handles.
+- **Retry with backoff.** Treat `5xx` and throttling as retryable; use
+  exponential backoff with jitter so a thousand parts don't retry in lockstep.
+- **Resume, don't restart.** A crashed worker should be able to pick up an
+  in-flight `uploadId` and finish the remaining parts.
+- **Abort orphans.** A scheduled job that calls `AbortMultipartUpload` on stale
+  uploads keeps you from paying for parts that never completed.
+
+> The mindset shift: a transfer isn't an event, it's a small state machine you
+> can pause, resume, and reason about.
+
+## What this bought us
+
+With persisted part state and bounded concurrency, a mid-flight node failure
+turns into a few retried parts instead of a restarted terabyte — and transfers
+survive deploys, network blips, and process restarts.
+
+If you're building large-file infrastructure, start with the state model, not
+the upload call. The upload is the easy part.
